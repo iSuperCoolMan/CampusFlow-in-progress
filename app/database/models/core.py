@@ -1,12 +1,10 @@
-from datetime import datetime
-from typing import Literal, Annotated
 from uuid import UUID
 
-from annotated_types import Interval, Timezone
-from sqlalchemy import CheckConstraint, ForeignKey, String
+from annotated_types import Timezone
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.database.base import BaseORM
+from app.database.models.base import BaseORM
 from app.utils.annotations import established_year_annotation
 from app.utils.enums import ProgramLevel
 

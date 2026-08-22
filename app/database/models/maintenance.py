@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.database.base import BaseORM
+from app.database.models.base import BaseORM
 
 
 class MaintenanceRequestORM(BaseORM):

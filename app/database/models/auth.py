@@ -1,7 +1,7 @@
 from sqlalchemy import JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.database.base import BaseORM
+from app.database.models.base import BaseORM
 from app.utils.enums import VerifyServices
 
 

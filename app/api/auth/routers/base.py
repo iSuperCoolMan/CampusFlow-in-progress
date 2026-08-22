@@ -17,7 +17,7 @@ from ..core.email import send_verification_email
 from ..core.security import verify_password
 from ..core.jwt_token import revoke_token, oauth2_scheme, create_token, decode_token
 from app.database.database import get_db
-from app.database.crud.user import get_user_by_uuid, get_user_by_username, get_user_by_email, create_user
+from app.database.crud.auth import get_user_by_uuid, get_user_by_username, get_user_by_email, create_user
 
 
 router = APIRouter(

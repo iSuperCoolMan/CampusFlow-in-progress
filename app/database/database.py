@@ -1,9 +1,9 @@
 import json
 from pydantic_core import to_jsonable_python
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from .base import BaseORM
+from app.database.models.base import BaseORM
 from app.api.auth.core.settings import db
 
 
@@ -16,6 +16,6 @@ engine = create_engine(
 BaseORM.metadata.create_all(engine)
 
 
-def get_db():
-    with Session(engine) as session:
+async def get_db():
+    with AsyncSession(engine) as session:
         return session

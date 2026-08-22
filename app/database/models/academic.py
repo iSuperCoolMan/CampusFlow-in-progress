@@ -5,7 +5,7 @@ from uuid import UUID
 from sqlalchemy import ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.database.base import BaseORM
+from app.database.models.base import BaseORM
 from app.utils.annotations import days_of_week_annotation, grade_value
 from app.utils.enums import Term, EnrollmentStatus
 

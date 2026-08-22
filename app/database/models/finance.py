@@ -1,11 +1,10 @@
 from datetime import datetime
-from typing import Literal
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, CheckConstraint
+from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.database.base import BaseORM
+from app.database.models.base import BaseORM
 from app.utils.enums import PaymentStatus
 
 
