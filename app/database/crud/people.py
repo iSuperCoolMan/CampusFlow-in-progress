@@ -5,9 +5,9 @@ from app.database.models.people import (
 from app.database.crud.base import BaseCRUD
 
 
-studentCRUD = BaseCRUD(StudentORM)
-instructorCRUD = BaseCRUD(InstructorORM)
-adminCRUD = BaseCRUD(AdminORM)
-registrarCRUD = BaseCRUD(RegistrarORM)
-finance_managerCRUD = BaseCRUD(FinanceManagerORM)
-facility_managerCRUD = BaseCRUD(FacilityManagerORM)
+studentCRUD = BaseCRUD[StudentORM]()
+instructorCRUD = BaseCRUD[InstructorORM]()
+adminCRUD = BaseCRUD[AdminORM]()
+registrarCRUD = BaseCRUD[RegistrarORM]()
+finance_managerCRUD = BaseCRUD[FinanceManagerORM]()
+facility_managerCRUD = BaseCRUD[FacilityManagerORM]()

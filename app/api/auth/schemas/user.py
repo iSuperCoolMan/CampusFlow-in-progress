@@ -1,42 +1,42 @@
 import re
 
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from pydantic import BaseModel, EmailStr, field_validator, ConfigDict
+from pydantic import BaseModel, EmailStr, ConfigDict
 
+from app.api.auth.core.security import get_password_hash
 from app.utils.enums import VerifyServices
+from app.utils.validated_strings import Username, Password
 
 
 class UserCreate(BaseModel):
-    username: str
+    username: Username
     email: EmailStr
-    password: str
-    verify_services: dict[VerifyServices, bool] = {service.value: False for service in VerifyServices}
+    password: Password
+    is_active: bool = True
+    verify_services: dict[VerifyServices, bool] = {service: False for service in VerifyServices}
 
 
-    @classmethod
-    @field_validator("password")
-    def password_must_be_strong(cls, value):
-        if len(value) < 8:
-            raise ValueError("Пароль должен содержать минимум 8 символов")
-        return value
+    def generate_user_model(self) -> "User":
+        return User(
+            uuid=uuid4(),
+            username=self.username,
+            email=self.email,
+            hashed_password=get_password_hash(self.password),
+            verify_services=self.verify_services
+        )
 
 
-    @classmethod
-    @field_validator("username")
-    def username_must_be_valid(cls, value):
-        if not re.match(r"^[a-zA-Z0-9_]{3,20}$", value):
-            raise ValueError(
-                "Имя пользователя: 3-20 символов, только буквы, цифры и _"
-            )
-        return value
+class UserSoftDelete(BaseModel):
+    is_active: bool = False
 
 
-class UserResponse(BaseModel):
+class User(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     uuid: UUID
-    username: str
+    username: Username
     email: str
     hashed_password: str
+    is_active: bool
     verify_services: dict[VerifyServices, bool]

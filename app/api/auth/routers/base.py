@@ -1,11 +1,12 @@
 from typing import Annotated
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..schemas.user import UserCreate, UserResponse, Token
+from app.utils.enums import TokenRole
+from ..schemas.user import UserCreate, User, UserSoftDelete
+from ..schemas.token import Token, EmailTokenData, RefreshTokenData, AccessTokenData
 
 from ..core.settings import (
     email_token as email_token_settings,
@@ -17,33 +18,34 @@ from ..core.email import send_verification_email
 from ..core.security import verify_password
 from ..core.jwt_token import revoke_token, oauth2_scheme, create_token, decode_token
 from app.database.database import get_db
-from app.database.crud.auth import get_user_by_uuid, get_user_by_username, get_user_by_email, create_user
+from app.database.crud import userCRUD
 
 
 router = APIRouter(
     tags=["auth"],
+    prefix="/auth"
 )
 
 
 @router.post(
     "/register",
-    response_model=UserResponse,
+    response_model=User,
     status_code=status.HTTP_201_CREATED
 )
 async def register(
         user_data: UserCreate,
         background_tasks: BackgroundTasks,
-        db: Session = Depends(get_db),
+        db: AsyncSession = Depends(get_db),
 ):
-    existing_user = get_user_by_username(db, username=user_data.username)
+    existing_username = await userCRUD.get_one_or_none_by_field(db, "username", user_data.username)
 
-    if existing_user:
+    if existing_username:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User with this username already exist."
         )
 
-    existing_email = get_user_by_email(db, email=user_data.email)
+    existing_email = await userCRUD.get_one_or_none_by_field(db, "email", user_data.email)
 
     if existing_email:
         raise HTTPException(
@@ -51,22 +53,21 @@ async def register(
             detail="User with this email already exist."
         )
 
-    new_user = create_user(db, user_data)
+    new_user = await userCRUD.create(db, user_data, commit=True)
 
-    token = create_token({"sub":new_user.email}, email_token_settings)
+    token = create_token(EmailTokenData(sub=new_user.email), email_token_settings)
     background_tasks.add_task(send_verification_email, new_user.email, token)
 
     return new_user
 
 
 @router.get("/verify-email")
-def verify_email(
+async def verify_email(
         token: Annotated[str, Depends(oauth2_scheme)],
-        db: Session = Depends(get_db),
+        db: AsyncSession = Depends(get_db),
 ):
-    payload = decode_token(token, email_token_settings)
-    email = payload["sub"]
-    user = get_user_by_email(db, email)
+    email = decode_token(token, email_token_settings).sub
+    user = await userCRUD.get_one_or_none_by_field(db, "email", email)
 
     if user:
         if user.is_verified:
@@ -84,9 +85,9 @@ def verify_email(
 )
 async def login(
         form_data: OAuth2PasswordRequestForm = Depends(),
-        db: Session = Depends(get_db)
+        db: AsyncSession = Depends(get_db)
 ):
-    user = get_user_by_username(db, username=form_data.username)
+    user = await userCRUD.get_one_or_none_by_field(db, "username", form_data.username)
 
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
@@ -95,20 +96,12 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    refresh_token = create_token({"sub": str(user.uuid)}, refresh_token_settings)
-    access_token = create_token({"sub": str(user.uuid)}, access_token_settings)
+    refresh_token = create_token(RefreshTokenData(sub=user.uuid), refresh_token_settings)
+    access_token = create_token(AccessTokenData(sub=user.uuid), access_token_settings)
 
     return [
-        {
-            "token": access_token,
-            "role": "access",
-            "type": "bearer"
-        },
-        {
-            "token": refresh_token,
-            "role": "refresh",
-            "type": "bearer"
-        }
+        Token(token=access_token, role=TokenRole.access),
+        Token(token=refresh_token, role=TokenRole.refresh)
     ]
 
 
@@ -117,31 +110,22 @@ async def login(
 )
 async def refresh(
         refresh_token = Annotated[str, Depends(oauth2_scheme)],
-        db: Session = Depends(get_db)
+        db: AsyncSession = Depends(get_db)
 ):
-    user_data = decode_token(refresh_token, "refresh")
-    user_uuid = UUID(user_data["sub"])
-
-    user = get_user_by_uuid(db, user_uuid)
+    user_uuid = decode_token(refresh_token, "refresh").sub
+    user = await userCRUD.get_one_or_none_by_uuid(db, user_uuid)
 
     if user is None:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
 
-    refresh_token = create_token({"sub": str(user.uuid)}, refresh_token_settings)
-    access_token = create_token({"sub": str(user.uuid)}, access_token_settings)
+    refresh_token = create_token(RefreshTokenData(sub=user.uuid), refresh_token_settings)
+    access_token = create_token(AccessTokenData(sub=user.uuid), access_token_settings)
 
     return [
-        {
-            "token": access_token,
-            "role": "access",
-            "type": "bearer"
-        },
-        {
-            "token": refresh_token,
-            "role": "refresh",
-            "type": "bearer"
-        }
+        Token(token=access_token, role=TokenRole.access),
+        Token(token=refresh_token, role=TokenRole.refresh)
     ]
+
 
 @router.get("/exit")
 async def logout(
@@ -154,4 +138,40 @@ async def logout(
 
     return {
         "Message": "Logout successfully"
+    }
+
+
+@router.get("/delete/soft")
+async def soft_delete(
+        db: AsyncSession = Depends(get_db),
+        access_token = Annotated[str, Depends(oauth2_scheme)]
+):
+    user_uuid = decode_token(access_token, settings=access_token_settings).sub
+    user = await userCRUD.get_one_or_none_by_uuid(db, user_uuid)
+
+    if user is None:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    await userCRUD.update(db, user, UserSoftDelete(), commit=True)
+
+    return {
+        "Message": f"User {user.username} is inactive."
+    }
+
+
+@router.get("/delete/hard")
+async def hard_delete(
+        db: AsyncSession = Depends(get_db),
+        access_token = Annotated[str, Depends(oauth2_scheme)]
+):
+    user_uuid = decode_token(access_token, settings=access_token_settings).sub
+    user = await userCRUD.get_one_or_none_by_uuid(db, user_uuid)
+
+    if user is None:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    await userCRUD.delete(db, user, commit=True)
+
+    return {
+        "Message": f"User {user.username} was deleted."
     }

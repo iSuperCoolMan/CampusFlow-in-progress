@@ -3,7 +3,10 @@ from fastapi import APIRouter, Request
 from ..core.settings import sso
 
 
-router = APIRouter()
+router = APIRouter(
+    tags=["sso"],
+    prefix="/auth/sso"
+)
 
 
 @router.get("/login/{sso_name}")

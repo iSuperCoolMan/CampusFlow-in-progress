@@ -46,3 +46,18 @@ class PaymentStatus(StrEnum):
     overdue = auto()
 
 
+class TokenRole(StrEnum):
+    access = auto()
+    refresh = auto()
+    email = auto()
+
+
+class Role(StrEnum):
+    student = auto()
+    instructor = auto()
+    admin = auto()
+    registrar = auto()
+    finance_manager = auto()
+    facility_manager = auto()
+
+

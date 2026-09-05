@@ -35,7 +35,7 @@ class SectionORM(BaseORM):
     days_of_week: Mapped[days_of_week_annotation] = mapped_column()
 
 
-class EnrollmentsORM(BaseORM):
+class EnrollmentORM(BaseORM):
     student_uuid: Mapped[UUID] = mapped_column(ForeignKey("students.uuid"))
     section_uuid: Mapped[UUID] = mapped_column(ForeignKey("sections.uuid"))
     status: Mapped[EnrollmentStatus] = mapped_column()

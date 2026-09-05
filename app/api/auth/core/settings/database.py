@@ -8,4 +8,4 @@ class DBSettings(BaseSettings):
     DIRECTORY: str
 
 
-db = DBSettings(DIRECTORY="sqlite:///app/database/database.db")
+db = DBSettings(DIRECTORY="sqlite+aiosqlite:///app/database/database.db")

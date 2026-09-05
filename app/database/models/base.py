@@ -91,7 +91,14 @@ class BaseORM(DeclarativeBase):
         for i in range(len(space_indices)):
             name = name[:space_indices[i] + i] + "_" + name[space_indices[i] + i:]
 
-        return name + "s"
+        if name.endswith("s"):
+            name += "es"
+        elif name.endswith("y"):
+            name = name[:-1] + "ies"
+        else:
+            name += "s"
+
+        return name.lower()
 
 
     def __init_subclass__(cls, **kwargs):

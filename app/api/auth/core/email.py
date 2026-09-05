@@ -1,7 +1,7 @@
 from fastapi_mail import FastMail, MessageSchema, MessageType, ConnectionConfig
 
 from .settings import uris, email, email_token
-from ..schemas.user import Token
+from ..schemas.token import Token
 
 mail_config = ConnectionConfig(
     MAIL_USERNAME=email.USERNAME,
@@ -16,7 +16,7 @@ mail_config = ConnectionConfig(
 )
 
 def send_verification_email(email_to_recieve: str, token: Token):
-    verification_url = f"{uris.BASE_URI}/auth/verify-email?token={token}"
+    verification_url = f"{uris.BASE_URI}/auth/verify-email?token={token.token}"
 
     html = f"""
     <p>Thanks for signing up! Please click the link below to verify your email:</p>

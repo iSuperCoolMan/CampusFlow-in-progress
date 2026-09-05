@@ -1,9 +1,9 @@
 from uuid import UUID
 
-from app.api.auth.schemas.user import UserCreate
+from pydantic import BaseModel
 
 
-class People(UserCreate):
+class People(BaseModel):
     first_name: str
     last_name: str
 

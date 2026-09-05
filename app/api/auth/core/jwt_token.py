@@ -1,7 +1,7 @@
 import asyncio
 
-from datetime import datetime, timezone, timedelta
-from typing import Annotated, Literal
+from datetime import datetime
+from typing import Annotated
 
 from fastapi import HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer
@@ -9,6 +9,7 @@ from jose import jwt, JWTError
 from starlette import status
 
 from .settings import TokenSettings
+from ..schemas.token import TokenData
 
 
 denylist = set()
@@ -16,25 +17,20 @@ denylist = set()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-def create_token(data: dict, token_settings: TokenSettings) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(minutes=token_settings.EXPIRE_MINUTES)
-
-    to_encode = data.copy()
-    to_encode.update({"exp": expire})
-
+def create_token(data: TokenData, settings: TokenSettings) -> str:
     encoded_jwt = jwt.encode(
-        to_encode,
-        token_settings.SECRET_KEY,
-        algorithm=token_settings.ALGORITHM
+        data.model_dump(),
+        settings.SECRET_KEY,
+        algorithm=settings.ALGORITHM
     )
 
     return encoded_jwt
 
 
-def decode_token(token: str, token_settings: TokenSettings) -> dict[str: str]:
+def decode_token(token: Annotated[str, Depends(oauth2_scheme)], settings: TokenSettings) -> TokenData:
     try:
-        payload = jwt.decode(token, token_settings.SECRET_KEY, algorithms=[token_settings.ALGORITHM])
-        return payload
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        return TokenData.model_dump(payload)
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -43,7 +39,7 @@ def decode_token(token: str, token_settings: TokenSettings) -> dict[str: str]:
         )
 
 
-def get_expire_delta_from_token(token: Annotated[str, Depends(oauth2_scheme)], token_settings: TokenSettings) -> datetime:
+def get_expire_delta_from_token(token: Annotated[str, Depends(oauth2_scheme)], settings: TokenSettings) -> datetime:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -51,7 +47,7 @@ def get_expire_delta_from_token(token: Annotated[str, Depends(oauth2_scheme)], t
     )
 
     try:
-        payload = jwt.decode(token, token_settings.SECRET_KEY, algorithms=[token_settings.ALGORITHM])
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         expire = payload.get("exp")
 
         if expire is None:
@@ -62,8 +58,8 @@ def get_expire_delta_from_token(token: Annotated[str, Depends(oauth2_scheme)], t
     return expire - datetime.now().timestamp()
 
 
-async def revoke_token(token: Annotated[str, Depends(oauth2_scheme)], role: Literal["access", "refresh"]) -> None:
-    delta = get_expire_delta_from_token(token, role)
+async def revoke_token(token: Annotated[str, Depends(oauth2_scheme)], settings: TokenSettings) -> None:
+    delta = get_expire_delta_from_token(token, settings)
 
     denylist.add(token)
     await asyncio.sleep(delta)
