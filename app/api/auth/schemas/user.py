@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, EmailStr, ConfigDict
 
 from app.api.auth.core.security import get_password_hash
-from app.utils.enums import VerifyServices, Role
+from app.utils.enums import VerifyServices, RoleStr
 from app.utils.validated_strings import UsernameStr, PasswordStr
 
 
@@ -23,6 +23,7 @@ class UserCreate(BaseModel):
             username=self.username,
             email=self.email,
             hashed_password=get_password_hash(self.password),
+            is_active=self.is_active,
             verify_services=self.verify_services
         )
 

@@ -2,11 +2,11 @@ from app.database.models.academic import CourseORM, CourseOfferingORM, SectionOR
 from app.database.crud.base import BaseCRUD
 
 
-courseCRUD = BaseCRUD[CourseORM]()
-course_offeringCRUD = BaseCRUD[CourseOfferingORM]()
-sectionCRUD = BaseCRUD[SectionORM]()
-enrollmentCRUD = BaseCRUD[EnrollmentORM]()
-gradeCRUD = BaseCRUD[GradeORM]()
+courseCRUD = BaseCRUD(CourseORM)
+course_offeringCRUD = BaseCRUD(CourseOfferingORM)
+sectionCRUD = BaseCRUD(SectionORM)
+enrollmentCRUD = BaseCRUD(EnrollmentORM)
+gradeCRUD = BaseCRUD(GradeORM)
 
 
 

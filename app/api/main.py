@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.auth import routers
+from app.api.auth import routers as auth_routers
+from app.api.campus_flow import routers as campus_flow_routers
 
 
 app = FastAPI(
@@ -17,5 +18,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for router in routers.__all__:
+for router in auth_routers.__all__:
+    app.include_router(router)
+
+for router in campus_flow_routers.__all__:
     app.include_router(router)

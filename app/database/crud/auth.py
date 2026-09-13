@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,9 +11,9 @@ from app.database.crud.base import BaseCRUD
 from app.utils.validated_strings import PasswordStr
 
 
-class UserCRUD(BaseCRUD[UserORM]):
+class UserCRUD(BaseCRUD):
     async def get_by_token(self, db: AsyncSession, token: str, token_settings: TokenSettings):
-        user_uuid = decode_token(token, settings=token_settings).sub
+        user_uuid = UUID(decode_token(token, settings=token_settings).sub)
         user = await self.get_one_or_none_by_uuid(db, user_uuid)
 
         if user is None:
@@ -29,7 +31,7 @@ class UserCRUD(BaseCRUD[UserORM]):
             await db.flush()
 
 
-userCRUD = UserCRUD()
+userCRUD = UserCRUD(UserORM)
 
 
 

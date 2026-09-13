@@ -5,4 +5,4 @@ from .core import UniversityORM, CampusORM, DepartmentORM, ProgramORM
 from .facility import RoomORM, RoomBookingORM
 from .finance import PaymentORM, ScholarshipORM
 from .maintenance import MaintenanceRequestORM, VendorORM
-from .people import PeopleORM, StudentORM, InstructorORM, AdminORM, RegistrarORM, FacilityManagerORM, FinanceManagerORM
+from .profile import ProfileORM, StudentORM, InstructorORM, AdminORM, RegistrarORM, FacilityManagerORM, FinanceManagerORM

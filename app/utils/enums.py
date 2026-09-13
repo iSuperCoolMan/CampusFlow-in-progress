@@ -52,7 +52,7 @@ class TokenRole(StrEnum):
     email = auto()
 
 
-class Role(StrEnum):
+class RoleStr(StrEnum):
     student = auto()
     instructor = auto()
     admin = auto()

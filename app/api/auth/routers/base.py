@@ -54,7 +54,7 @@ async def register(
             detail="User with this email already exist."
         )
 
-    new_user = await userCRUD.create(db, user_data, commit=True)
+    new_user = await userCRUD.create(db, user_data.generate_user_model(), commit=True)
 
     token = create_token(EmailTokenData(sub=new_user.email), email_token_settings)
     background_tasks.add_task(send_verification_email, new_user.email, token)
@@ -111,7 +111,7 @@ async def login(
     "/refresh", response_model=list[Token]
 )
 async def refresh(
-        refresh_token: str = Depends(oauth2_scheme),
+        refresh_token = Annotated[str, Depends(oauth2_scheme)],
         db: AsyncSession = Depends(get_db)
 ):
     user = await userCRUD.get_by_token(db, refresh_token, refresh_token_settings)
@@ -128,8 +128,8 @@ async def refresh(
 @router.get("/exit")
 async def logout(
         background_tasks: BackgroundTasks,
-        access_token: str = Depends(oauth2_scheme),
-        refresh_token: str = Depends(oauth2_scheme),
+        access_token = Annotated[str, Depends(oauth2_scheme)],
+        refresh_token = Annotated[str, Depends(oauth2_scheme)],
 ):
     background_tasks.add_task(revoke_token, access_token)
     background_tasks.add_task(revoke_token, refresh_token)
@@ -143,7 +143,7 @@ async def logout(
 async def update(
         user_update: UserUpdate,
         db: AsyncSession = Depends(get_db),
-        access_token: str = Depends(oauth2_scheme)
+        access_token = Annotated[str, Depends(oauth2_scheme)]
 ):
     user = await userCRUD.get_by_token(db, access_token, access_token_settings)
 
@@ -157,7 +157,7 @@ async def update(
 async def update_password(
         password: PasswordStr,
         db: AsyncSession = Depends(get_db),
-        access_token: str = Depends(oauth2_scheme)
+        access_token = Annotated[str, Depends(oauth2_scheme)]
 ):
     user = await userCRUD.get_by_token(db, access_token, access_token_settings)
     await userCRUD.update_password(db, user, password, commit=True)

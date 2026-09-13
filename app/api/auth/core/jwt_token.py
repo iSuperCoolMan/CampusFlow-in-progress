@@ -19,7 +19,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 def create_token(data: TokenData, settings: TokenSettings) -> str:
     encoded_jwt = jwt.encode(
-        data.model_dump(),
+        data.model_dump(mode='json'),
         settings.SECRET_KEY,
         algorithm=settings.ALGORITHM
     )
@@ -30,7 +30,7 @@ def create_token(data: TokenData, settings: TokenSettings) -> str:
 def decode_token(token: Annotated[str, Depends(oauth2_scheme)], settings: TokenSettings) -> TokenData:
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        return TokenData.model_dump(payload)
+        return TokenData.model_validate(payload)
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
